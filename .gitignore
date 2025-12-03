@@ -1,7 +1,7 @@
 .vscode/
 .idea/
 *.iml
-.venv/
+venv
 
 *.pyc
 __pycache__/

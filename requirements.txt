@@ -1,0 +1,9 @@
+kagglehub
+numpy
+pandas
+scikit-learn
+matplotlib
+lightning
+opencv-python
+albumentations
+tensorboard

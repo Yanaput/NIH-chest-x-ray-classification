@@ -3,6 +3,13 @@ import torch.nn as nn
 import lightning.pytorch as pl
 from sklearn.metrics import roc_auc_score, precision_score, recall_score
 
+
+LABELS = [
+    "Atelectasis","Cardiomegaly","Effusion","Infiltration","Mass",
+    "Nodule","Pneumonia","Pneumothorax","Consolidation","Edema",
+    "Emphysema","Fibrosis","Pleural_Thickening","Hernia"
+]
+
 class NIHClassifier(pl.LightningModule):
     def __init__(self, model, pos_weight=None, lr=1e-4):
         super().__init__()
@@ -82,23 +89,30 @@ class NIHClassifier(pl.LightningModule):
     def _calculate_metrics(self, logits, targets, prefix="train_"):
         probs = torch.sigmoid(logits).numpy()
         targets = targets.numpy()
-        print(probs)
+        # print(probs)
         
-        preds = (probs > 0.7).astype(int)
-        
+        preds = (probs > 0.5).astype(int)
+    
         try:
-            auc = roc_auc_score(targets, probs, average="macro")
+            auc_macro = roc_auc_score(targets, probs, average="macro")
+            auc_per_class = roc_auc_score(targets, probs, average=None)
         except ValueError:
-            auc = 0.0
+            auc_macro = 0.0
+            auc_per_class = np.zeros(targets.shape[1])
             
         precision = precision_score(targets, preds, average="macro", zero_division=0)
         recall = recall_score(targets, preds, average="macro", zero_division=0)
         
-        return {
-            f"{prefix}auc": auc,
+        metrics = {
+            f"{prefix}auc": auc_macro,
             f"{prefix}precision": precision,
             f"{prefix}recall": recall
         }
+
+        for i, class_auc in enumerate(auc_per_class):
+            metrics[f"{prefix}auc_{LABELS[i]}"] = class_auc
+
+        return metrics
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)

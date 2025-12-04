@@ -2,25 +2,30 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Tuple
 from torch.utils.data import DataLoader
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
+# import albumentations as A
+# from albumentations.pytorch import ToTensorV2
+import torchvision.transforms as transforms
 import lightning.pytorch as pl
 from .dataset import NIHDataset
 
-def build_transforms(img_size: int, mean: float, std: float) -> Tuple[A.Compose, A.Compose]:
-    train_transforms = A.Compose([
-        A.Resize(img_size, img_size),
-        A.ShiftScaleRotate(shift_limit=0.05, scale_limit=0.05, rotate_limit=15, p=0.5),
-        # A.RandomBrightnessContrast(p=0.2),
-        A.Normalize(mean=[mean], std=[std], max_pixel_value=255.0),
-        ToTensorV2(),
-    ])
 
-    val_transforms = A.Compose([
-        A.Resize(img_size, img_size),
-        A.Normalize(mean=[mean], std=[std], max_pixel_value=255.0),
-        ToTensorV2(),
-    ])
+def build_transforms(img_size: int, trans_crop: int, mean: float, std: float):
+    train_transforms_list = [
+        transforms.Resize(img_size),
+        transforms.RandomResizedCrop(trans_crop),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[mean], std=[std])
+    ]
+    train_transforms = transforms.Compose(train_transforms_list)
+
+    val_transforms_list = [
+        transforms.Resize(img_size),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[mean], std=[std])
+    ]
+    val_transforms = transforms.Compose(val_transforms_list)
+
     return train_transforms, val_transforms
 
 class NIHDataModule(pl.LightningDataModule):
@@ -29,7 +34,8 @@ class NIHDataModule(pl.LightningDataModule):
         train_csv: str | Path,
         val_csv: str | Path,
         test_csv: Optional[str | Path] = None,
-        img_size: int = 512,
+        img_size: int = 256,
+        trans_crop: int = 224,
         batch_size: int = 32,
         num_workers: int = 6,
         pin_memory: bool = True,
@@ -43,6 +49,7 @@ class NIHDataModule(pl.LightningDataModule):
         self.val_csv   = Path(val_csv)
         self.test_csv  = Path(test_csv) if test_csv else None
         self.img_size  = img_size
+        self.trans_crop  = trans_crop
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.pin_memory = pin_memory
@@ -64,7 +71,7 @@ class NIHDataModule(pl.LightningDataModule):
              raise FileNotFoundError(f"Missing test CSV: {self.test_csv}")
 
     def setup(self, stage: Optional[str] = None) -> None:
-        train_tf, val_tf = build_transforms(self.img_size, self.mean, self.std)
+        train_tf, val_tf = build_transforms(self.img_size, self.trans_crop, self.mean, self.std)
 
         if stage in (None, "fit"):
             self.train_ds = NIHDataset(self.train_csv, transform=train_tf, use_cached_dir=self.cached_dir)

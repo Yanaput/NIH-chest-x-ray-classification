@@ -20,10 +20,11 @@ def main():
     parser.add_argument("--test_csv", type=str, help="Path to test CSV", default="data/test.csv")
     parser.add_argument("--image_dir", type=str, help="Path to image directory (optional cache)", default="data/processed/images_all") 
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
-    parser.add_argument("--epochs", type=int, default=10, help="Number of epochs")
+    parser.add_argument("--epochs", type=int, default=70, help="Number of epochs")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
-    parser.add_argument("--num_workers", type=int, default=4, help="Number of dataloader workers")
-    parser.add_argument("--img_size", type=int, default=340, help="Image size")
+    parser.add_argument("--num_workers", type=int, default=8, help="Number of dataloader workers")
+    parser.add_argument("--img_size", type=int, default=256, help="Image size")
+    parser.add_argument("--trans_crop", type=int, default=224)
     parser.add_argument("--log_dir", type=str, default="logs", help="Directory for logs")
     parser.add_argument("--ckpt_dir", type=str, default="checkpoints", help="Directory for checkpoints")
     parser.add_argument("--fast_dev_run", action="store_true", help="Run a quick development run")
@@ -36,6 +37,7 @@ def main():
         val_csv=args.val_csv,
         test_csv=args.test_csv,
         img_size=args.img_size,
+        trans_crop=args.trans_crop,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         cached_dir=args.image_dir
@@ -57,7 +59,7 @@ def main():
         monitor="val_auc",
         mode="max",
         save_top_k=3,
-        save_last=True,
+        # save_last=True,
     )
     
     lr_monitor = LearningRateMonitor(logging_interval="epoch")
@@ -71,7 +73,7 @@ def main():
         logger=logger,
         callbacks=[checkpoint_callback, lr_monitor],
         fast_dev_run=args.fast_dev_run,
-        log_every_n_steps=10
+        log_every_n_steps=100
     )
 
     trainer.fit(model, datamodule=dm)

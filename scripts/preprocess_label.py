@@ -52,10 +52,11 @@ def combine_all_img():
             continue
         d = ALL_IMG_DIR / p.name
         if d.exists(): continue
-        try:
-            d.symlink_to(p.resolve())
-        except OSError:
-            os.link(p.resolve(), d)
+        shutil.move(str(p), str(d))
+        # try:
+        #     d.symlink_to(p.resolve())
+        # except OSError:
+        #     os.link(p.resolve(), d)
 
 
 def main():
@@ -127,11 +128,11 @@ def main():
     print("Val prevalence:",   val_df[LABELS].mean().round(4).to_dict())
 
     # if input(f"Are you sure you want to delete raw data at {RAW}? (y/N) ").lower() == 'y':
-    #     try:
-    #         shutil.rmtree(RAW)
-    #         print(f"Directory '{RAW}' and its contents removed successfully.")
-    #     except OSError as e:
-    #         print(f"Error: {e.filename} - {e.strerror}")
+    try:
+        shutil.rmtree(RAW)
+        print(f"Directory '{RAW}' and its contents removed successfully.")
+    except OSError as e:
+        print(f"Error: {e.filename} - {e.strerror}")
     # else:
     #     print("Deletion cancelled.")
 

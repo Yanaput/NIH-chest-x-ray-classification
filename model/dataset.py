@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Sequence
+from PIL import Image
 import cv2
 import numpy as np
 import pandas as pd
@@ -48,9 +49,9 @@ class NIHDataset(Dataset):
         if img is None:
             raise FileNotFoundError(f"Image not found or unreadable: {p}")
 
-        img = img[..., None]  # H x W x 1
+        img = Image.fromarray(img)
         if self.transform is not None:
-            img = self.transform(image=img)["image"]  # -> Tensor [1,H,W] float32
+            img = self.transform(img)
 
         y = row[LABELS].astype("float32").to_numpy()
         y = torch.from_numpy(y)

@@ -3,7 +3,7 @@ import shutil
 import kagglehub
 import os
 
-os.environ["KAGGLEHUB_CACHE"] = "/workspace/.cache/kagglehub"
+# os.environ["KAGGLEHUB_CACHE"] = "/workspace/.cache/kagglehub"
 
 
 ROOT = Path(__file__).resolve().parents[1]

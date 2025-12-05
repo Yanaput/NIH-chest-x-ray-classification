@@ -17,3 +17,5 @@ build/
 *.csv
 
 data
+checkpoints
+logs

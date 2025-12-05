@@ -11,10 +11,13 @@ LABELS = [
 ]
 
 class NIHClassifier(pl.LightningModule):
-    def __init__(self, model, pos_weight=None, lr=1e-4):
+    def __init__(self, model, pos_weight=None, thesh=0.5 ,lr=1e-4):
         super().__init__()
+
+        self.save_hyperparameters(ignore=['model'])
         self.model = model
         self.lr = lr
+        self.thesh = thesh
         
         if pos_weight is not None:
             self.criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
@@ -23,6 +26,7 @@ class NIHClassifier(pl.LightningModule):
 
         self.training_step_outputs = []
         self.validation_step_outputs = []
+        self.test_step_outputs = []
 
     def forward(self, x):
         return self.model(x)
@@ -85,13 +89,41 @@ class NIHClassifier(pl.LightningModule):
         
         self.log_dict(metrics, prog_bar=True)
         self.validation_step_outputs.clear()
+    
+    def test_step(self, batch, batch_idx):
+        x, y = batch["image"], batch["target"]
+        logits = self(x)
+        loss = self.criterion(logits, y)
+        
+        self.test_step_outputs.append({
+            "logits": logits.detach().cpu(),
+            "targets": y.detach().cpu(),
+            "loss": loss.detach().cpu()
+        })
+        return loss
+
+
+    def on_test_epoch_end(self):
+        outputs = self.test_step_outputs
+        if not outputs:
+            return
+
+        all_logits = torch.cat([x["logits"] for x in outputs])
+        all_targets = torch.cat([x["targets"] for x in outputs])
+        avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
+        
+        metrics = self._calculate_metrics(all_logits, all_targets, prefix="test_")
+        metrics["test_loss_epoch"] = avg_loss
+        
+        self.log_dict(metrics, prog_bar=True)
+        self.test_step_outputs.clear()
 
     def _calculate_metrics(self, logits, targets, prefix="train_"):
         probs = torch.sigmoid(logits).numpy()
         targets = targets.numpy()
         # print(probs)
         
-        preds = (probs > 0.5).astype(int)
+        preds = (probs > self.thesh).astype(int)
     
         try:
             auc_macro = roc_auc_score(targets, probs, average="macro")

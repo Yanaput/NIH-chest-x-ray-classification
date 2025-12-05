@@ -11,8 +11,10 @@ from .dataset import NIHDataset
 
 def build_transforms(img_size: int, trans_crop: int, mean: float, std: float):
     train_transforms_list = [
-        transforms.Resize(img_size),
-        transforms.RandomResizedCrop(trans_crop),
+        # transforms.Resize(img_size),
+        transforms.RandomRotation(degrees=10),
+        transforms.RandomResizedCrop(trans_crop, scale=(0.7, 1.0)),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean=[mean], std=[std])
@@ -21,6 +23,7 @@ def build_transforms(img_size: int, trans_crop: int, mean: float, std: float):
 
     val_transforms_list = [
         transforms.Resize(img_size),
+        transforms.CenterCrop(trans_crop),
         transforms.ToTensor(),
         transforms.Normalize(mean=[mean], std=[std])
     ]

@@ -1,0 +1,3 @@
+python ./scripts/test.py --checkpoint ./checkpoints/epoch=37-val_auc=0.7861.ckpt --test_img_out_dir plot/epoch=37 --log_name test_epoch=37 
+python ./scripts/test.py --checkpoint ./checkpoints/epoch=38-val_auc=0.7861.ckpt --test_img_out_dir plot/epoch=38 --log_name test_epoch=38
+python ./scripts/test.py --checkpoint ./checkpoints/epoch=43-val_auc=0.7861.ckpt --test_img_out_dir plot/epoch=43 --log_name test_epoch=43

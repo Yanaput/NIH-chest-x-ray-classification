@@ -12,6 +12,7 @@ from model.densenet import DenseNet
 from model.dataset import NIHDataset
 from model.dataloader import NIHDataModule
 from model.classifier import NIHClassifier
+from lightning.pytorch import seed_everything
 
 def main():
     parser = argparse.ArgumentParser()
@@ -25,8 +26,11 @@ def main():
     parser.add_argument("--img_size", type=int, default=256, help="Image size")
     parser.add_argument("--trans_crop", type=int, default=224)
     parser.add_argument("--log_dir", type=str, default="logs", help="Directory for logs")
+    parser.add_argument("--log_name", type=str, default="nih_classifier_test")
+    parser.add_argument("--test_img_out_dir", type=str, default=".")
     
     args = parser.parse_args()
+    seed_everything(42, workers=True)
 
     dm = NIHDataModule(
         train_csv=args.train_csv,
@@ -38,19 +42,18 @@ def main():
         num_workers=args.num_workers,
         cached_dir=args.image_dir
     )
-    # try:
-    #     pos_weight = NIHDataset.compute_pos_weight(args.train_csv)
-    #     print("Computed positive weights for class imbalance handling.")
-    #     print(pos_weight)
-    # except Exception as e:
-    #     print(f"Warning: Could not compute positive weights: {e}")
-    #     pos_weight = None
+
     backbone = DenseNet(num_classes=14, in_channels=1)
-    model = NIHClassifier.load_from_checkpoint(args.checkpoint, model=backbone, strict=False)
-    logger = TensorBoardLogger(save_dir=args.log_dir, name="nih_classifier_test")
+    model = NIHClassifier.load_from_checkpoint(
+        args.checkpoint,
+        model=backbone,
+        strict=False,
+        test_img_out_dir=args.test_img_out_dir
+        )
+    logger = TensorBoardLogger(save_dir=args.log_dir, name=args.log_name)
 
     trainer = pl.Trainer(
-        accelerator="auto",
+        accelerator="gpu",
         devices="auto",
         logger=logger,
     )
